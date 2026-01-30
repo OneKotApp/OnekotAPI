@@ -1,7 +1,6 @@
 # OneKot API Documentation for Flutter Integration
 
-**Base URL:** `http://localhost:3000` (Development)  
-**Production URL:** `https://api.onekot.com` (To be configured)
+**Base URL:** `https://onekot-api.vercel.app/` (Development)
 
 **API Version:** v1
 

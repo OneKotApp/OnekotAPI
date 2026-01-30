@@ -61,6 +61,99 @@ class RunService {
   }
 
   /**
+   * Bulk create multiple runs (for offline sync)
+   * @param {string} userId - User ID
+   * @param {Array} runsData - Array of run session data
+   * @returns {Object} Created runs and failed runs
+   */
+  async bulkCreateRuns(userId, runsData) {
+    const results = {
+      successful: [],
+      failed: [],
+      summary: {
+        total: runsData.length,
+        created: 0,
+        skipped: 0,
+        errors: 0,
+      },
+    };
+
+    try {
+      for (const runData of runsData) {
+        try {
+          // Generate unique ID if not provided
+          const runId = runData.id || generateRunId();
+
+          // Check if run already exists
+          const existingRun = await Run.findOne({ id: runId, userId });
+          if (existingRun) {
+            results.failed.push({
+              id: runId,
+              reason: 'Run already exists',
+              data: runData,
+            });
+            results.summary.skipped++;
+            continue;
+          }
+
+          // Prepare run document
+          const run = await Run.create({
+            id: runId,
+            userId,
+            startTime: new Date(runData.startTime),
+            endTime: new Date(runData.endTime),
+            distance: runData.distance,
+            duration: runData.duration,
+            averageSpeed: runData.averageSpeed,
+            maxSpeed: runData.maxSpeed || 0,
+            notes: runData.notes || null,
+            route: runData.route.map((point) => ({
+              latitude: point.latitude,
+              longitude: point.longitude,
+              timestamp: new Date(point.timestamp),
+              altitude: point.altitude || null,
+              accuracy: point.accuracy || null,
+            })),
+          });
+
+          // Store location points in separate collection
+          if (runData.route && runData.route.length > 0) {
+            await LocationPoint.bulkInsertPoints(runId, userId, runData.route);
+          }
+
+          results.successful.push(run);
+          results.summary.created++;
+        } catch (error) {
+          results.failed.push({
+            id: runData.id || 'unknown',
+            reason: error.message,
+            data: runData,
+          });
+          results.summary.errors++;
+        }
+      }
+
+      // Update user metadata based on successful runs
+      if (results.successful.length > 0) {
+        const totalDistance = results.successful.reduce((sum, run) => sum + run.distance, 0);
+        const totalDuration = results.successful.reduce((sum, run) => sum + run.duration, 0);
+
+        const user = await User.findById(userId);
+        if (user) {
+          await user.updateMetadata({
+            distance: totalDistance,
+            duration: totalDuration,
+          });
+        }
+      }
+
+      return results;
+    } catch (error) {
+      throw error;
+    }
+  }
+
+  /**
    * Get all runs for a user with pagination
    * @param {string} userId - User ID
    * @param {Object} options - Query options

@@ -1,5 +1,6 @@
 const runService = require('../services/runService');
 const ApiResponse = require('../utils/ApiResponse');
+const ApiError = require('../utils/ApiError');
 const { asyncHandler } = require('../utils/helpers');
 const { MESSAGES } = require('../utils/constants');
 
@@ -93,6 +94,27 @@ class RunController {
     const result = await runService.deleteRun(req.params.id, req.userId);
 
     const response = ApiResponse.success(result.message);
+    res.status(response.statusCode).json(response.toJSON());
+  });
+
+  /**
+   * Bulk sync multiple runs (for offline data)
+   * POST /api/v1/runs/bulk-sync
+   */
+  bulkSyncRuns = asyncHandler(async (req, res) => {
+    const { runs } = req.body;
+
+    if (!runs || !Array.isArray(runs) || runs.length === 0) {
+      throw ApiError.badRequest('Runs array is required and must not be empty');
+    }
+
+    const result = await runService.bulkCreateRuns(req.userId, runs);
+
+    const response = ApiResponse.success(
+      `Bulk sync completed: ${result.summary.created} created, ${result.summary.skipped} skipped, ${result.summary.errors} errors`,
+      result
+    );
+
     res.status(response.statusCode).json(response.toJSON());
   });
 

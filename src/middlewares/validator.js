@@ -31,6 +31,11 @@ const loginValidation = [
     .isEmail()
     .withMessage(MESSAGES.INVALID_EMAIL)
     .normalizeEmail(),
+  body('username')
+    .optional()
+    .trim()
+    .isLength({ min: 2, max: 50 })
+    .withMessage('Username must be between 2 and 50 characters'),
   body('deviceInfo').optional().isObject().withMessage('Device info must be an object'),
   body('location').optional().isObject().withMessage('Location must be an object'),
   validate,
@@ -199,6 +204,43 @@ const updateProfileValidation = [
   validate,
 ];
 
+/**
+ * Validation rules for bulk sync runs (offline data)
+ */
+const bulkSyncValidation = [
+  body('runs')
+    .isArray({ min: 1, max: 100 })
+    .withMessage('Runs must be an array with 1-100 items'),
+  body('runs.*.startTime')
+    .isISO8601()
+    .withMessage('Start time must be a valid ISO 8601 date'),
+  body('runs.*.endTime')
+    .isISO8601()
+    .withMessage('End time must be a valid ISO 8601 date'),
+  body('runs.*.distance')
+    .isFloat({ min: 0 })
+    .withMessage('Distance must be a positive number (meters)'),
+  body('runs.*.duration')
+    .isInt({ min: 0 })
+    .withMessage('Duration must be a positive integer (seconds)'),
+  body('runs.*.averageSpeed')
+    .isFloat({ min: 0 })
+    .withMessage('Average speed must be a positive number (m/s)'),
+  body('runs.*.route')
+    .isArray({ min: 2 })
+    .withMessage('Route must have at least 2 location points'),
+  body('runs.*.route.*.latitude')
+    .isFloat({ min: -90, max: 90 })
+    .withMessage('Latitude must be between -90 and 90'),
+  body('runs.*.route.*.longitude')
+    .isFloat({ min: -180, max: 180 })
+    .withMessage('Longitude must be between -180 and 180'),
+  body('runs.*.route.*.timestamp')
+    .isISO8601()
+    .withMessage('Timestamp must be a valid ISO 8601 date'),
+  validate,
+];
+
 module.exports = {
   validate,
   loginValidation,
@@ -209,4 +251,5 @@ module.exports = {
   statsPeriodValidation,
   runIdValidation,
   updateProfileValidation,
+  bulkSyncValidation,
 };

@@ -7,6 +7,7 @@ const {
   dateRangeValidation,
   paginationValidation,
   runIdValidation,
+  bulkSyncValidation,
 } = require('../middlewares/validator');
 const { createRunLimiter } = require('../middlewares/rateLimiter');
 
@@ -21,6 +22,13 @@ router.use(authenticate);
  * @access  Private
  */
 router.post('/', createRunLimiter, createRunValidation, runController.createRun);
+
+/**
+ * @route   POST /api/v1/runs/bulk-sync
+ * @desc    Bulk sync multiple runs (for offline data)
+ * @access  Private
+ */
+router.post('/bulk-sync', bulkSyncValidation, runController.bulkSyncRuns);
 
 /**
  * @route   GET /api/v1/runs

@@ -12,7 +12,7 @@ class AuthService {
    * @returns {Object} User data and token
    */
   async login(loginData) {
-    const { email, deviceInfo, location, userAgent } = loginData;
+    const { email, username, deviceInfo, location, userAgent } = loginData;
 
     if (!email) {
       throw ApiError.badRequest(MESSAGES.EMAIL_REQUIRED);
@@ -25,7 +25,12 @@ class AuthService {
       // Create new user for MVP
       user = await User.create({
         email: email.toLowerCase().trim(),
+        username: username || null,
       });
+    } else if (username && !user.username) {
+      // Update username if not set
+      user.username = username;
+      await user.save();
     }
 
     if (!user.isActive) {
