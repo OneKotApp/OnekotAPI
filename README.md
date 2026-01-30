@@ -292,6 +292,24 @@ npm run dev
 npm start
 ```
 
+## 🚀 Deployment
+
+### Deploy to Vercel
+
+This project is configured for easy deployment to Vercel.
+
+**Quick Deploy:**
+1. Push your code to GitHub
+2. Import project in Vercel dashboard
+3. Configure environment variables
+4. Deploy!
+
+For detailed deployment instructions, see [DEPLOYMENT.md](DEPLOYMENT.md)
+
+**One-Click Deploy:**
+
+[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https://github.com/OneKotApp/OnekotAPI)
+
 ## 🤝 Contributing
 
 1. Fork the repository
