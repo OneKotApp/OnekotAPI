@@ -59,6 +59,13 @@ router.get('/date-range', dateRangeValidation, runController.getRunsByDateRange)
 router.get('/:id', runIdValidation, runController.getRunById);
 
 /**
+ * @route   GET /api/v1/runs/community-map
+ * @desc    Get all community runs for map plotting (all users)
+ * @access  Private (authenticated users only)
+ */
+router.get('/community-map', paginationValidation, runController.getCommunityRuns);
+
+/**
  * @route   GET /api/v1/runs/:id/location-points
  * @desc    Get location points for a specific run
  * @access  Private

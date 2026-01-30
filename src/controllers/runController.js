@@ -132,6 +132,39 @@ class RunController {
 
     res.status(response.statusCode).json(response.toJSON());
   });
+
+  /**
+   * Get all community runs for map (all users)
+   * GET /api/v1/runs/community-map
+   */
+  getCommunityRuns = asyncHandler(async (req, res) => {
+    const { page, limit, minLat, maxLat, minLng, maxLng } = req.query;
+
+    // Parse bounding box if provided
+    let boundingBox = null;
+    if (minLat && maxLat && minLng && maxLng) {
+      boundingBox = {
+        minLat: parseFloat(minLat),
+        maxLat: parseFloat(maxLat),
+        minLng: parseFloat(minLng),
+        maxLng: parseFloat(maxLng),
+      };
+    }
+
+    const result = await runService.getCommunityRuns({
+      page,
+      limit,
+      boundingBox,
+    });
+
+    const response = ApiResponse.withPagination(
+      'Community runs fetched successfully',
+      result.runs,
+      result.pagination
+    );
+
+    res.status(response.statusCode).json(response.toJSON());
+  });
 }
 
 module.exports = new RunController();

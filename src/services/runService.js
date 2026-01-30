@@ -202,6 +202,57 @@ class RunService {
   }
 
   /**
+   * Get all community runs for map plotting (all users)
+   * @param {Object} options - Query options
+   * @returns {Object} Runs and pagination data
+   */
+  async getCommunityRuns(options = {}) {
+    const {
+      page = PAGINATION.DEFAULT_PAGE,
+      limit = PAGINATION.DEFAULT_LIMIT,
+      boundingBox = null,
+    } = options;
+
+    try {
+      // Build query
+      const query = {
+        isDeleted: false,
+        'route.0': { $exists: true }, // Ensure route has at least one point
+      };
+
+      // Apply bounding box filter if provided
+      if (boundingBox) {
+        const { minLat, maxLat, minLng, maxLng } = boundingBox;
+        query['route.latitude'] = {
+          $gte: minLat,
+          $lte: maxLat,
+        };
+        query['route.longitude'] = {
+          $gte: minLng,
+          $lte: maxLng,
+        };
+      }
+
+      const runs = await Run.find(query)
+        .select('id userId startTime endTime distance duration route createdAt')
+        .sort({ startTime: -1 })
+        .limit(Math.min(parseInt(limit), PAGINATION.MAX_LIMIT))
+        .skip((parseInt(page) - 1) * Math.min(parseInt(limit), PAGINATION.MAX_LIMIT))
+        .lean();
+
+      const totalItems = await Run.countDocuments(query);
+      const pagination = calculatePagination(totalItems, parseInt(page), parseInt(limit));
+
+      return {
+        runs,
+        pagination,
+      };
+    } catch (error) {
+      throw error;
+    }
+  }
+
+  /**
    * Get runs within a date range
    * @param {string} userId - User ID
    * @param {Date} startDate - Start date
