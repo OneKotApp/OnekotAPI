@@ -88,6 +88,7 @@ curl -X GET "https://onekot-api.vercel.app/api/v1/runs/community-map?page=1&limi
       "_id": "65f1234567890abcdef12345",
       "id": "1738195200000_user123",
       "userId": "65f1234567890abcdef00001",
+      "username": "RunnerJohn",
       "startTime": "2026-01-30T10:00:00.000Z",
       "endTime": "2026-01-30T10:30:00.000Z",
       "distance": 5000,
@@ -121,6 +122,7 @@ curl -X GET "https://onekot-api.vercel.app/api/v1/runs/community-map?page=1&limi
       "_id": "65f1234567890abcdef12346",
       "id": "1738195200000_user456",
       "userId": "65f1234567890abcdef00002",
+      "username": "SpeedRunner99",
       "startTime": "2026-01-30T14:00:00.000Z",
       "endTime": "2026-01-30T14:45:00.000Z",
       "distance": 7500,
@@ -160,7 +162,8 @@ curl -X GET "https://onekot-api.vercel.app/api/v1/runs/community-map?page=1&limi
 |-------|------|-------------|
 | `_id` | String | MongoDB document ID |
 | `id` | String | Unique run identifier |
-| `userId` | String | User who created the run |
+| `userId` | String | User ID who created the run |
+| `username` | String | Username of the runner (or "Anonymous" if not set) |
 | `startTime` | String | Run start time (ISO 8601) |
 | `endTime` | String | Run end time (ISO 8601) |
 | `distance` | Number | Total distance in meters |
@@ -203,343 +206,6 @@ curl -X GET "https://onekot-api.vercel.app/api/v1/runs/community-map?page=1&limi
   "message": "Too many requests, please try again later",
   "timestamp": "2026-01-31T12:00:00.000Z"
 }
-```
-
----
-
-## 💻 Code Examples
-
-### JavaScript/TypeScript
-
-```javascript
-async function fetchCommunityMap(token, options = {}) {
-  const { page = 1, limit = 50, boundingBox = null } = options;
-  
-  let url = `https://onekot-api.vercel.app/api/v1/runs/community-map?page=${page}&limit=${limit}`;
-  
-  // Add bounding box if provided (for visible map area)
-  if (boundingBox) {
-    const { minLat, maxLat, minLng, maxLng } = boundingBox;
-    url += `&minLat=${minLat}&maxLat=${maxLat}&minLng=${minLng}&maxLng=${maxLng}`;
-  }
-  
-  try {
-    const response = await fetch(url, {
-      headers: {
-        'Authorization': `Bearer ${token}`,
-        'Content-Type': 'application/json',
-      },
-    });
-    
-    const data = await response.json();
-    
-    if (!response.ok) {
-      throw new Error(data.message || 'Failed to fetch community map');
-    }
-    
-    console.log(`Loaded ${data.data.length} runs`);
-    console.log(`Total runs: ${data.meta.pagination.totalItems}`);
-    
-    return data;
-  } catch (error) {
-    console.error('Error fetching community map:', error.message);
-    throw error;
-  }
-}
-
-// Usage 1: Load all runs (with pagination)
-const token = 'your_jwt_token_here';
-const communityData = await fetchCommunityMap(token, { page: 1, limit: 100 });
-
-// Usage 2: Load runs within map viewport
-const mapBounds = {
-  minLat: 40.7,
-  maxLat: 40.8,
-  minLng: -74.1,
-  maxLng: -74.0,
-};
-const visibleRuns = await fetchCommunityMap(token, { 
-  page: 1, 
-  limit: 100, 
-  boundingBox: mapBounds 
-});
-
-// Plot runs on map
-communityData.data.forEach(run => {
-  run.route.forEach(point => {
-    // Add marker or polyline to map
-    console.log(`Point: ${point.latitude}, ${point.longitude}`);
-  });
-});
-```
-
-### Dart/Flutter with Google Maps
-
-```dart
-import 'dart:convert';
-import 'package:http/http.dart' as http;
-import 'package:google_maps_flutter/google_maps_flutter.dart';
-
-class CommunityMapService {
-  final String baseUrl = 'https://onekot-api.vercel.app/api/v1';
-  
-  Future<List<Polyline>> fetchCommunityMap({
-    required String token,
-    int page = 1,
-    int limit = 100,
-    LatLngBounds? bounds,
-  }) async {
-    var url = '$baseUrl/runs/community-map?page=$page&limit=$limit';
-    
-    // Add bounding box if map bounds provided
-    if (bounds != null) {
-      url += '&minLat=${bounds.southwest.latitude}'
-             '&maxLat=${bounds.northeast.latitude}'
-             '&minLng=${bounds.southwest.longitude}'
-             '&maxLng=${bounds.northeast.longitude}';
-    }
-    
-    try {
-      final response = await http.get(
-        Uri.parse(url),
-        headers: {
-          'Authorization': 'Bearer $token',
-          'Content-Type': 'application/json',
-        },
-      );
-      
-      if (response.statusCode != 200) {
-        final error = jsonDecode(response.body);
-        throw Exception(error['message'] ?? 'Failed to fetch community map');
-      }
-      
-      final data = jsonDecode(response.body);
-      final runs = data['data'] as List<dynamic>;
-      
-      print('Loaded ${runs.length} runs');
-      print('Total runs: ${data['meta']['pagination']['totalItems']}');
-      
-      // Convert runs to polylines for map display
-      List<Polyline> polylines = [];
-      
-      for (var i = 0; i < runs.length; i++) {
-        final run = runs[i];
-        final route = run['route'] as List<dynamic>;
-        
-        if (route.length < 2) continue;
-        
-        List<LatLng> points = route.map((point) {
-          return LatLng(
-            point['latitude'] as double,
-            point['longitude'] as double,
-          );
-        }).toList();
-        
-        polylines.add(Polyline(
-          polylineId: PolylineId(run['id']),
-          points: points,
-          color: Colors.blue.withOpacity(0.6),
-          width: 3,
-          geodesic: true,
-        ));
-      }
-      
-      return polylines;
-    } catch (e) {
-      print('Error fetching community map: $e');
-      rethrow;
-    }
-  }
-}
-
-// Usage in your widget
-class CommunityMapScreen extends StatefulWidget {
-  @override
-  _CommunityMapScreenState createState() => _CommunityMapScreenState();
-}
-
-class _CommunityMapScreenState extends State<CommunityMapScreen> {
-  GoogleMapController? _mapController;
-  Set<Polyline> _polylines = {};
-  final _mapService = CommunityMapService();
-  
-  @override
-  void initState() {
-    super.initState();
-    _loadCommunityRuns();
-  }
-  
-  Future<void> _loadCommunityRuns() async {
-    final token = 'your_jwt_token_here';
-    
-    try {
-      // Get visible map bounds
-      LatLngBounds? bounds;
-      if (_mapController != null) {
-        bounds = await _mapController!.getVisibleRegion();
-      }
-      
-      final polylines = await _mapService.fetchCommunityMap(
-        token: token,
-        limit: 100,
-        bounds: bounds,
-      );
-      
-      setState(() {
-        _polylines = polylines.toSet();
-      });
-    } catch (e) {
-      print('Error loading community runs: $e');
-    }
-  }
-  
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: Text('Community Map')),
-      body: GoogleMap(
-        initialCameraPosition: CameraPosition(
-          target: LatLng(40.7128, -74.0060),
-          zoom: 12,
-        ),
-        polylines: _polylines,
-        onMapCreated: (controller) {
-          _mapController = controller;
-          _loadCommunityRuns();
-        },
-        onCameraIdle: () {
-          // Reload runs when user stops panning/zooming
-          _loadCommunityRuns();
-        },
-      ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: _loadCommunityRuns,
-        child: Icon(Icons.refresh),
-      ),
-    );
-  }
-}
-```
-
-### Python
-
-```python
-import requests
-from typing import List, Dict, Any, Optional
-
-class CommunityMapAPI:
-    def __init__(self, base_url: str, token: str):
-        self.base_url = base_url
-        self.token = token
-        self.headers = {
-            'Authorization': f'Bearer {token}',
-            'Content-Type': 'application/json'
-        }
-    
-    def fetch_community_map(
-        self,
-        page: int = 1,
-        limit: int = 100,
-        bounding_box: Optional[Dict[str, float]] = None
-    ) -> Dict[str, Any]:
-        """
-        Fetch community runs for map plotting
-        
-        Args:
-            page: Page number
-            limit: Number of runs per page (max 100)
-            bounding_box: Optional dict with minLat, maxLat, minLng, maxLng
-            
-        Returns:
-            Dict containing runs and pagination info
-        """
-        url = f'{self.base_url}/runs/community-map?page={page}&limit={limit}'
-        
-        if bounding_box:
-            url += (f"&minLat={bounding_box['minLat']}"
-                   f"&maxLat={bounding_box['maxLat']}"
-                   f"&minLng={bounding_box['minLng']}"
-                   f"&maxLng={bounding_box['maxLng']}")
-        
-        try:
-            response = requests.get(url, headers=self.headers)
-            data = response.json()
-            
-            if response.status_code != 200:
-                raise Exception(data.get('message', 'Failed to fetch community map'))
-            
-            print(f"Loaded {len(data['data'])} runs")
-            print(f"Total runs: {data['meta']['pagination']['totalItems']}")
-            
-            return data
-        except Exception as e:
-            print(f"Error fetching community map: {str(e)}")
-            raise
-
-# Usage
-api = CommunityMapAPI(
-    base_url='https://onekot-api.vercel.app/api/v1',
-    token='your_jwt_token_here'
-)
-
-# Load all runs
-community_data = api.fetch_community_map(page=1, limit=100)
-
-# Load runs within specific area (e.g., New York City)
-nyc_bounds = {
-    'minLat': 40.7,
-    'maxLat': 40.8,
-    'minLng': -74.1,
-    'maxLng': -74.0
-}
-nyc_runs = api.fetch_community_map(page=1, limit=100, bounding_box=nyc_bounds)
-
-# Process runs
-for run in community_data['data']:
-    print(f"Run {run['id']}: {run['distance']}m, {len(run['route'])} points")
-    for point in run['route']:
-        print(f"  - {point['latitude']}, {point['longitude']}")
-```
-
----
-
-## 🎯 Use Cases
-
-### 1. **Heat Map Visualization**
-Show popular running areas based on density of routes:
-```javascript
-const runs = await fetchCommunityMap(token, { limit: 100 });
-const heatmapData = runs.data.flatMap(run => 
-  run.route.map(point => ({ lat: point.latitude, lng: point.longitude }))
-);
-// Use with Google Maps Heatmap Layer or similar
-```
-
-### 2. **Route Discovery**
-Find interesting routes in your area:
-```javascript
-const myLocation = { minLat: 40.7, maxLat: 40.8, minLng: -74.1, maxLng: -74.0 };
-const nearbyRuns = await fetchCommunityMap(token, { 
-  limit: 50, 
-  boundingBox: myLocation 
-});
-```
-
-### 3. **Performance Tracking**
-Load runs incrementally as user pans the map:
-```javascript
-mapInstance.on('moveend', async () => {
-  const bounds = mapInstance.getBounds();
-  const runs = await fetchCommunityMap(token, {
-    boundingBox: {
-      minLat: bounds.getSouth(),
-      maxLat: bounds.getNorth(),
-      minLng: bounds.getWest(),
-      maxLng: bounds.getEast(),
-    }
-  });
-  updateMapPolylines(runs.data);
-});
 ```
 
 ---
@@ -590,12 +256,13 @@ Approximate response sizes to help with data planning:
 ### What's Included
 - ✅ Run routes and timestamps
 - ✅ Distance and duration
-- ✅ Anonymous userId (for tracking individual users if needed)
+- ✅ Username (display name chosen by user)
+- ✅ UserId (for tracking individual users if needed)
 
 ### What's NOT Included
 - ❌ User email
-- ❌ User username
-- ❌ User profile information
+- ❌ User profile picture
+- ❌ User personal information
 - ❌ Deleted runs
 - ❌ Notes (might contain personal info)
 

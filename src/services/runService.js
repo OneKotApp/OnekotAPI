@@ -235,16 +235,24 @@ class RunService {
 
       const runs = await Run.find(query)
         .select('id userId startTime endTime distance duration route createdAt')
+        .populate('userId', 'username email') // Populate username and email from User
         .sort({ startTime: -1 })
         .limit(Math.min(parseInt(limit), PAGINATION.MAX_LIMIT))
         .skip((parseInt(page) - 1) * Math.min(parseInt(limit), PAGINATION.MAX_LIMIT))
         .lean();
 
+      // Transform the response to include username at top level
+      const transformedRuns = runs.map(run => ({
+        ...run,
+        username: run.userId?.username || 'Anonymous',
+        userId: run.userId?._id || run.userId, // Keep userId as string ID
+      }));
+
       const totalItems = await Run.countDocuments(query);
       const pagination = calculatePagination(totalItems, parseInt(page), parseInt(limit));
 
       return {
-        runs,
+        runs: transformedRuns,
         pagination,
       };
     } catch (error) {
