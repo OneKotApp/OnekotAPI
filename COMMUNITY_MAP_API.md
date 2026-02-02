@@ -89,6 +89,7 @@ curl -X GET "https://onekot-api.vercel.app/api/v1/runs/community-map?page=1&limi
       "id": "1738195200000_user123",
       "userId": "65f1234567890abcdef00001",
       "username": "RunnerJohn",
+      "runColor": "#FF6B6B",
       "startTime": "2026-01-30T10:00:00.000Z",
       "endTime": "2026-01-30T10:30:00.000Z",
       "distance": 5000,
@@ -123,6 +124,7 @@ curl -X GET "https://onekot-api.vercel.app/api/v1/runs/community-map?page=1&limi
       "id": "1738195200000_user456",
       "userId": "65f1234567890abcdef00002",
       "username": "SpeedRunner99",
+      "runColor": "#4ECDC4",
       "startTime": "2026-01-30T14:00:00.000Z",
       "endTime": "2026-01-30T14:45:00.000Z",
       "distance": 7500,
@@ -163,7 +165,8 @@ curl -X GET "https://onekot-api.vercel.app/api/v1/runs/community-map?page=1&limi
 | `_id` | String | MongoDB document ID |
 | `id` | String | Unique run identifier |
 | `userId` | String | User ID who created the run |
-| `username` | String | Username of the runner (or "Anonymous" if not set) |
+| `username` | String | Username of the runner (defaults to "Runner" if not set) |
+| `runColor` | String | Hex color code for the user's runs (e.g., "#FF6B6B") |
 | `startTime` | String | Run start time (ISO 8601) |
 | `endTime` | String | Run end time (ISO 8601) |
 | `distance` | Number | Total distance in meters |
@@ -220,14 +223,14 @@ curl -X GET "https://onekot-api.vercel.app/api/v1/runs/community-map?page=1&limi
 
 ### 2. **Map Display**
 - Use semi-transparent polylines for better visibility
-- Different colors for different users (optional)
+- Use different colors per user (provided in `runColor` field)
 - Cluster nearby routes to reduce visual clutter
 - Show loading indicator while fetching
 
 ### 3. **Data Privacy**
-- Only essential data is returned (no user personal info)
-- Users are represented by userId (anonymous)
-- No email, username, or profile data exposed
+- Only essential data is returned (no user email or sensitive info)
+- Users can choose their display username and run color
+- No profile pictures or sensitive personal data exposed
 
 ### 4. **Rate Limiting**
 - Don't reload on every map movement
@@ -256,7 +259,8 @@ Approximate response sizes to help with data planning:
 ### What's Included
 - ✅ Run routes and timestamps
 - ✅ Distance and duration
-- ✅ Username (display name chosen by user)
+- ✅ Username (display name chosen by user, defaults to "Runner")
+- ✅ Run color (hex color code for map visualization)
 - ✅ UserId (for tracking individual users if needed)
 
 ### What's NOT Included

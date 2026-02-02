@@ -235,16 +235,17 @@ class RunService {
 
       const runs = await Run.find(query)
         .select('id userId startTime endTime distance duration route createdAt')
-        .populate('userId', 'username email') // Populate username and email from User
+        .populate('userId', 'username email runColor') // Populate username, email, and runColor from User
         .sort({ startTime: -1 })
         .limit(Math.min(parseInt(limit), PAGINATION.MAX_LIMIT))
         .skip((parseInt(page) - 1) * Math.min(parseInt(limit), PAGINATION.MAX_LIMIT))
         .lean();
 
-      // Transform the response to include username at top level
+      // Transform the response to include username and runColor at top level
       const transformedRuns = runs.map(run => ({
         ...run,
-        username: run.userId?.username || 'Anonymous',
+        username: run.userId?.username || 'Runner',
+        runColor: run.userId?.runColor || '#FF6B6B',
         userId: run.userId?._id || run.userId, // Keep userId as string ID
       }));
 

@@ -214,6 +214,7 @@ Authorization: Bearer <jwt_token>
       "email": "user@example.com",
       "username": null,
       "profilePicture": null,
+      "runColor": "#FF6B6B",
       "isActive": true,
       "lastLoginAt": "2026-01-30T10:00:00.000Z",
       "metadata": {
@@ -316,6 +317,7 @@ Authorization: Bearer <jwt_token>
       "email": "user@example.com",
       "username": "John Runner",
       "profilePicture": "https://example.com/avatar.jpg",
+      "runColor": "#FF6B6B",
       "isActive": true,
       "lastLoginAt": "2026-01-30T10:00:00.000Z",
       "metadata": {
@@ -1087,6 +1089,7 @@ GET /api/v1/runs/date-range?startDate=2026-01-01T00:00:00.000Z&endDate=2026-01-3
       "email": "user@example.com",
       "username": "John Runner",
       "profilePicture": "https://example.com/avatar.jpg",
+      "runColor": "#FF6B6B",
       "isActive": true,
       "lastLoginAt": "2026-01-30T10:00:00.000Z",
       "metadata": {
@@ -1108,13 +1111,14 @@ GET /api/v1/runs/date-range?startDate=2026-01-01T00:00:00.000Z&endDate=2026-01-3
 **Endpoint:** `PATCH /api/v1/users/profile`  
 **Authentication:** Required  
 
-**Description:** Update user profile (username and profile picture).
+**Description:** Update user profile (username, profile picture, and run color).
 
 **Request Body:**
 ```json
 {
   "username": "John Runner Pro",
-  "profilePicture": "https://example.com/new-avatar.jpg"
+  "profilePicture": "https://example.com/new-avatar.jpg",
+  "runColor": "#FF6B6B"
 }
 ```
 
@@ -1123,6 +1127,7 @@ GET /api/v1/runs/date-range?startDate=2026-01-01T00:00:00.000Z&endDate=2026-01-3
 |-------|------|----------|-------------|
 | username | String | No | Username (3-50 characters) |
 | profilePicture | String (URL) | No | Profile picture URL |
+| runColor | String | No | Hex color code for runs (e.g., "#FF6B6B" or "#F00") |
 
 **Success Response (200):**
 ```json
@@ -1136,6 +1141,7 @@ GET /api/v1/runs/date-range?startDate=2026-01-01T00:00:00.000Z&endDate=2026-01-3
       "email": "user@example.com",
       "username": "John Runner Pro",
       "profilePicture": "https://example.com/new-avatar.jpg",
+      "runColor": "#FF6B6B",
       "updatedAt": "2026-01-30T11:30:00.000Z"
     }
   },
@@ -1219,6 +1225,7 @@ class User {
   final String email;
   final String? username;
   final String? profilePicture;
+  final String runColor;
   final bool isActive;
   final DateTime? lastLoginAt;
   final UserMetadata metadata;
@@ -1230,6 +1237,7 @@ class User {
     required this.email,
     this.username,
     this.profilePicture,
+    this.runColor = '#FF6B6B',
     required this.isActive,
     this.lastLoginAt,
     required this.metadata,
@@ -1243,6 +1251,7 @@ class User {
       email: json['email'],
       username: json['username'],
       profilePicture: json['profilePicture'],
+      runColor: json['runColor'] ?? '#FF6B6B',
       isActive: json['isActive'],
       lastLoginAt: json['lastLoginAt'] != null 
           ? DateTime.parse(json['lastLoginAt']) 

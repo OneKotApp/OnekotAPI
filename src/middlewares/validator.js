@@ -201,6 +201,10 @@ const updateProfileValidation = [
     .optional()
     .isURL()
     .withMessage('Profile picture must be a valid URL'),
+  body('runColor')
+    .optional()
+    .matches(/^#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$/)
+    .withMessage('Run color must be a valid hex color code (e.g., #FF6B6B or #F00)'),
   validate,
 ];
 

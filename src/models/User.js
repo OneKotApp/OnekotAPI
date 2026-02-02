@@ -23,6 +23,11 @@ const userSchema = new mongoose.Schema(
       type: String,
       default: null,
     },
+    runColor: {
+      type: String,
+      default: '#FF6B6B',
+      match: [/^#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$/, 'Please provide a valid hex color code'],
+    },
     isActive: {
       type: Boolean,
       default: true,

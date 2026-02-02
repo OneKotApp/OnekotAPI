@@ -45,6 +45,10 @@ class UserService {
       user.profilePicture = updateData.profilePicture;
     }
 
+    if (updateData.runColor !== undefined) {
+      user.runColor = updateData.runColor;
+    }
+
     await user.save();
 
     return sanitizeUser(user);
