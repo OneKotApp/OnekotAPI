@@ -79,6 +79,13 @@ const sanitizeObject = (obj) => {
  */
 const sanitizeInput = (req, res, next) => {
   try {
+    // Debug logging for email field
+    if (req.body && req.body.email) {
+      console.log('🔍 Before sanitization - email:', req.body.email);
+      console.log('🔍 Email type:', typeof req.body.email);
+      console.log('🔍 Full body:', JSON.stringify(req.body));
+    }
+
     // Sanitize query parameters
     if (req.query && typeof req.query === 'object') {
       const sanitizedQuery = {};
@@ -124,6 +131,12 @@ const sanitizeInput = (req, res, next) => {
     // Sanitize request body (only for non-multipart requests)
     if (req.body && typeof req.body === 'object' && !req.is('multipart/form-data')) {
       req.body = sanitizeObject(req.body);
+    }
+
+    // Debug logging after sanitization
+    if (req.body && req.body.email) {
+      console.log('✅ After sanitization - email:', req.body.email);
+      console.log('✅ Email type:', typeof req.body.email);
     }
 
     next();

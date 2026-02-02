@@ -8,7 +8,14 @@ const { MESSAGES, VALIDATION } = require('../utils/constants');
 const validate = (req, res, next) => {
   const errors = validationResult(req);
 
+  // Debug logging
+  if (req.body && req.body.email) {
+    console.log('🎯 In validator - email:', req.body.email);
+    console.log('🎯 Email type:', typeof req.body.email);
+  }
+
   if (!errors.isEmpty()) {
+    console.log('❌ Validation errors:', errors.array());
     const errorMessages = errors
       .array()
       .map((err) => `${err.path}: ${err.msg}`)
