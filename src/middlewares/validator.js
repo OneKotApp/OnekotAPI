@@ -32,11 +32,11 @@ const loginValidation = [
     .withMessage(MESSAGES.INVALID_EMAIL),
   body('username')
     .optional()
-    .trim()
     .isLength({ min: 2, max: 50 })
     .withMessage('Username must be between 2 and 50 characters')
-    .matches(/^[a-zA-Z0-9_]+$/)
-    .withMessage('Username can only contain letters, numbers, and underscores'),
+    .matches(/^[a-zA-Z0-9_ ]+$/)
+    .withMessage('Username can only contain letters, numbers, underscores, and spaces')
+    .trim(),
   body('deviceInfo')
     .optional()
     .isObject()
