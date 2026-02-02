@@ -7,13 +7,15 @@
 /**
  * Sanitize string to prevent NoSQL injection
  * Removes dangerous MongoDB operators and special characters
+ * Preserves valid characters like @ for emails, dots, hyphens, etc.
  * @param {string} str - String to sanitize
  * @returns {string} Sanitized string
  */
 const sanitizeString = (str) => {
   if (typeof str !== 'string') return str;
   
-  // Remove MongoDB operators and dangerous characters
+  // Only remove MongoDB operators and dangerous characters
+  // Preserve @, dots, hyphens, and other valid special characters
   return str
     .replace(/\$/g, '') // Remove $ (MongoDB operator)
     .replace(/\{/g, '') // Remove {
@@ -24,6 +26,7 @@ const sanitizeString = (str) => {
 /**
  * Recursively sanitize an object to prevent NoSQL injection
  * Removes prototype pollution attempts and dangerous patterns
+ * Skips email fields to preserve @ symbol
  * @param {Object} obj - Object to sanitize
  * @returns {Object} Sanitized object
  */
@@ -54,7 +57,10 @@ const sanitizeObject = (obj) => {
     
     const value = obj[key];
     
-    if (typeof value === 'string') {
+    // Skip sanitization for email fields to preserve @ symbol
+    if (key === 'email' && typeof value === 'string') {
+      sanitized[sanitizedKey] = value.replace(/[${}]/g, '').trim();
+    } else if (typeof value === 'string') {
       sanitized[sanitizedKey] = sanitizeString(value);
     } else if (typeof value === 'object') {
       sanitized[sanitizedKey] = sanitizeObject(value);
