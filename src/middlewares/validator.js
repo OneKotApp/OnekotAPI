@@ -30,7 +30,6 @@ const loginValidation = [
     .withMessage(MESSAGES.EMAIL_REQUIRED)
     .isEmail()
     .withMessage(MESSAGES.INVALID_EMAIL)
-    .normalizeEmail()
     .customSanitizer(value => value ? value.replace(/[${}]/g, '') : value),
   body('username')
     .optional()
