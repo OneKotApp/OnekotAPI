@@ -29,8 +29,7 @@ const loginValidation = [
     .notEmpty()
     .withMessage(MESSAGES.EMAIL_REQUIRED)
     .isEmail()
-    .withMessage(MESSAGES.INVALID_EMAIL)
-    .customSanitizer(value => value ? value.replace(/[${}]/g, '') : value),
+    .withMessage(MESSAGES.INVALID_EMAIL),
   body('username')
     .optional()
     .trim()

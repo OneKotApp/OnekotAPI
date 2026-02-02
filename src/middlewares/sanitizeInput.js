@@ -57,8 +57,9 @@ const sanitizeObject = (obj) => {
     
     const value = obj[key];
     
-    // Skip sanitization for email fields to preserve @ symbol
+    // Special handling for email fields - preserve @ . - and other valid email chars
     if (key === 'email' && typeof value === 'string') {
+      // Only remove dangerous NoSQL injection characters
       sanitized[sanitizedKey] = value.replace(/[${}]/g, '').trim();
     } else if (typeof value === 'string') {
       sanitized[sanitizedKey] = sanitizeString(value);
@@ -90,7 +91,12 @@ const sanitizeInput = (req, res, next) => {
           
           const value = req.query[key];
           if (typeof value === 'string') {
-            sanitizedQuery[key] = sanitizeString(value);
+            // Special handling for email fields - only remove NoSQL operators
+            if (key === 'email') {
+              sanitizedQuery[key] = value.replace(/[${}]/g, '').trim();
+            } else {
+              sanitizedQuery[key] = sanitizeString(value);
+            }
           } else {
             sanitizedQuery[key] = value;
           }
