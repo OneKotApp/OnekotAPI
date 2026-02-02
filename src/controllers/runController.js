@@ -165,6 +165,48 @@ class RunController {
 
     res.status(response.statusCode).json(response.toJSON());
   });
+
+  /**
+   * Get area leaderboard
+   * GET /api/v1/runs/leaderboard/area
+   */
+  getAreaLeaderboard = asyncHandler(async (req, res) => {
+    const { page, limit } = req.query;
+
+    const result = await runService.getAreaLeaderboard({
+      page,
+      limit,
+    });
+
+    const response = ApiResponse.withPagination(
+      'Area leaderboard fetched successfully',
+      result.leaderboard,
+      result.pagination
+    );
+
+    res.status(response.statusCode).json(response.toJSON());
+  });
+
+  /**
+   * Get distance leaderboard
+   * GET /api/v1/runs/leaderboard/distance
+   */
+  getDistanceLeaderboard = asyncHandler(async (req, res) => {
+    const { page, limit } = req.query;
+
+    const result = await runService.getDistanceLeaderboard({
+      page,
+      limit,
+    });
+
+    const response = ApiResponse.withPagination(
+      'Distance leaderboard fetched successfully',
+      result.leaderboard,
+      result.pagination
+    );
+
+    res.status(response.statusCode).json(response.toJSON());
+  });
 }
 
 module.exports = new RunController();

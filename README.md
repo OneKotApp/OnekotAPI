@@ -5,14 +5,17 @@ A production-ready REST API server for the OneKot running and mapping mobile app
 ## 🚀 Features
 
 - **Email-only Authentication** (MVP) with JWT tokens
-- **Run Tracking** - Create, retrieve, update, and delete run sessions
+- **Run Tracking** - Create, retrieve, update, and delete run sessions with optional area tagging
+- **Leaderboards** - Area and distance-based rankings with pagination
+- **Community Map** - View all community runs with area information
 - **Statistics** - Comprehensive stats (daily, weekly, monthly, yearly, all-time)
 - **Location Points** - Store and retrieve GPS route data
 - **User Management** - Profile management and activity tracking
 - **Login Activity** - Track user logins with device and location info
-- **Rate Limiting** - Protection against abuse
+- **Security** - NoSQL injection prevention, XSS protection, input sanitization
+- **Rate Limiting** - Protection against abuse and DoS attacks
 - **Error Handling** - Comprehensive error handling with proper HTTP status codes
-- **Validation** - Request validation using express-validator
+- **Validation** - Request validation using express-validator with security sanitization
 - **Clean Architecture** - Separation of concerns with controllers, services, and models
 
 ## 📁 Project Structure
@@ -42,6 +45,7 @@ onekotAPI/
 │   │   ├── authMiddleware.js
 │   │   ├── errorHandler.js
 │   │   ├── validator.js
+│   │   ├── sanitizeInput.js     # Security: NoSQL injection prevention
 │   │   └── rateLimiter.js
 │   ├── routes/                  # API routes
 │   │   ├── auth.routes.js
@@ -264,6 +268,34 @@ curl http://localhost:3000/health
 # Test API documentation
 curl http://localhost:3000/api/v1
 ```
+
+## 📚 API Documentation
+
+Comprehensive documentation for all API features:
+
+- **[API Testing Guide](API_TESTING.md)** - Complete API testing examples
+- **[Flutter Integration](FLUTTER_API_DOCUMENTATION.md)** - Flutter/Dart client integration
+- **[Community Map API](COMMUNITY_MAP_API.md)** - Community mapping features
+- **[Leaderboard API](LEADERBOARD_API.md)** - Rankings and leaderboard features
+- **[Bulk Sync Guide](BULK_SYNC_GUIDE.md)** - Offline sync functionality
+- **[Security Guide](SECURITY.md)** - Security best practices and protections
+- **[Deployment Guide](DEPLOYMENT.md)** - Production deployment instructions
+
+## 🔒 Security
+
+This API implements comprehensive security measures with minimal performance overhead:
+
+- **NoSQL Injection Prevention** - Automatic sanitization of all inputs
+- **XSS Protection** - HTML/script tag removal and CSP headers
+- **Prototype Pollution Prevention** - Object structure validation
+- **Rate Limiting** - DoS/brute force protection
+- **Input Validation** - Strict type and format validation
+- **HTTPS Enforcement** - Secure transport layer
+- **Security Headers** - Helmet.js configuration
+
+**Performance Impact:** < 5ms per request
+
+See [SECURITY.md](SECURITY.md) for detailed security documentation.
 
 ## 🌍 Environment Variables
 

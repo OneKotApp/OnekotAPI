@@ -28,6 +28,16 @@ const runSchema = new mongoose.Schema(
       required: [true, 'Distance is required'],
       min: [0, 'Distance cannot be negative'],
     },
+    area: {
+      type: String,
+      default: null,
+      maxlength: [100, 'Area name cannot exceed 100 characters'],
+    },
+    totalArea: {
+      type: Number,
+      default: null,
+      min: [0, 'Total area cannot be negative'],
+    },
     duration: {
       type: Number,
       required: [true, 'Duration is required'],

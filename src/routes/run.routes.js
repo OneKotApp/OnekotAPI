@@ -59,6 +59,20 @@ router.get('/date-range', dateRangeValidation, runController.getRunsByDateRange)
 router.get('/community-map', paginationValidation, runController.getCommunityRuns);
 
 /**
+ * @route   GET /api/v1/runs/leaderboard/area
+ * @desc    Get area leaderboard with rankings
+ * @access  Private
+ */
+router.get('/leaderboard/area', paginationValidation, runController.getAreaLeaderboard);
+
+/**
+ * @route   GET /api/v1/runs/leaderboard/distance
+ * @desc    Get distance leaderboard with rankings
+ * @access  Private
+ */
+router.get('/leaderboard/distance', paginationValidation, runController.getDistanceLeaderboard);
+
+/**
  * @route   GET /api/v1/runs/:id
  * @desc    Get a specific run by ID
  * @access  Private

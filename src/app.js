@@ -6,6 +6,7 @@ const morgan = require('morgan');
 const compression = require('compression');
 const { errorHandler, notFound } = require('./middlewares/errorHandler');
 const { apiLimiter } = require('./middlewares/rateLimiter');
+const { sanitizeInput, blockNoSQLInjection } = require('./middlewares/sanitizeInput');
 const { NODE_ENV } = require('./utils/constants');
 
 // Import routes
@@ -16,8 +17,22 @@ const userRoutes = require('./routes/user.routes');
 
 const app = express();
 
-// Security middleware
-app.use(helmet());
+// Security middleware - Helmet for HTTP headers security
+app.use(helmet({
+  contentSecurityPolicy: {
+    directives: {
+      defaultSrc: ["'self'"],
+      styleSrc: ["'self'", "'unsafe-inline'"],
+      scriptSrc: ["'self'"],
+      imgSrc: ["'self'", 'data:', 'https:'],
+    },
+  },
+  hsts: {
+    maxAge: 31536000,
+    includeSubDomains: true,
+    preload: true,
+  },
+}));
 
 // CORS configuration
 const corsOptions = {
@@ -26,12 +41,18 @@ const corsOptions = {
     : ['http://localhost:3000'],
   credentials: true,
   optionsSuccessStatus: 200,
+  maxAge: 86400, // Cache preflight requests for 24 hours
 };
 app.use(cors(corsOptions));
 
 // Body parser middleware
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
+
+// Security: Input sanitization and NoSQL injection prevention
+// Applied globally to all routes with minimal overhead
+app.use(sanitizeInput);
+app.use(blockNoSQLInjection);
 
 // Compression middleware
 app.use(compression());

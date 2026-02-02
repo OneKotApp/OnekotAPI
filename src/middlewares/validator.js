@@ -30,14 +30,38 @@ const loginValidation = [
     .withMessage(MESSAGES.EMAIL_REQUIRED)
     .isEmail()
     .withMessage(MESSAGES.INVALID_EMAIL)
-    .normalizeEmail(),
+    .normalizeEmail()
+    .customSanitizer(value => value ? value.replace(/[${}]/g, '') : value),
   body('username')
     .optional()
     .trim()
     .isLength({ min: 2, max: 50 })
-    .withMessage('Username must be between 2 and 50 characters'),
-  body('deviceInfo').optional().isObject().withMessage('Device info must be an object'),
-  body('location').optional().isObject().withMessage('Location must be an object'),
+    .withMessage('Username must be between 2 and 50 characters')
+    .matches(/^[a-zA-Z0-9_]+$/)
+    .withMessage('Username can only contain letters, numbers, and underscores')
+    .customSanitizer(value => value ? value.replace(/[${}]/g, '') : value),
+  body('deviceInfo')
+    .optional()
+    .isObject()
+    .withMessage('Device info must be an object')
+    .custom((value) => {
+      // Prevent prototype pollution
+      if (value && (value.__proto__ || value.constructor || value.prototype)) {
+        throw new Error('Invalid device info structure');
+      }
+      return true;
+    }),
+  body('location')
+    .optional()
+    .isObject()
+    .withMessage('Location must be an object')
+    .custom((value) => {
+      // Prevent prototype pollution
+      if (value && (value.__proto__ || value.constructor || value.prototype)) {
+        throw new Error('Invalid location structure');
+      }
+      return true;
+    }),
   validate,
 ];
 
@@ -83,15 +107,54 @@ const createRunValidation = [
     .withMessage('Max speed must be a positive number'),
   body('notes')
     .optional()
+    .trim()
     .isString()
     .withMessage('Notes must be a string')
     .isLength({ max: VALIDATION.MAX_NOTES_LENGTH })
-    .withMessage(`Notes cannot exceed ${VALIDATION.MAX_NOTES_LENGTH} characters`),
+    .withMessage(`Notes cannot exceed ${VALIDATION.MAX_NOTES_LENGTH} characters`)
+    .customSanitizer(value => value ? value.replace(/[<>]/g, '') : value),
+  body('area')
+    .optional()
+    .trim()
+    .isString()
+    .withMessage('Area must be a string')
+    .isLength({ max: 200 })
+    .withMessage('Area name cannot exceed 200 characters')
+    .matches(/^[a-zA-Z0-9\s\-,.()&'"]+$/)
+    .withMessage('Area contains invalid characters')
+    .customSanitizer(value => {
+      // Remove potential NoSQL injection patterns and dangerous characters
+      if (!value) return value;
+      return value
+        .replace(/[${}]/g, '') // Remove NoSQL operators
+        .replace(/[<>]/g, '') // Remove HTML/script tags
+        .trim();
+    }),
+  body('totalArea')
+    .optional()
+    .isFloat({ min: 0 })
+    .withMessage('Total area must be a positive number (in square meters)'),
   body('route')
     .notEmpty()
     .withMessage('Route is required')
     .isArray({ min: 1 })
     .withMessage('Route must be an array with at least one point'),
+  // Validate route array doesn't contain NoSQL injection
+  body('route')
+    .custom((value) => {
+      if (typeof value === 'object' && value !== null && !Array.isArray(value)) {
+        throw new Error('Route must be an array, not an object');
+      }
+      return true;
+    }),
+  body('id')
+    .optional()
+    .trim()
+    .customSanitizer(value => {
+      // Sanitize ID to prevent NoSQL injection
+      if (!value) return value;
+      return value.replace(/[${}]/g, '');
+    }),
   body('route.*.latitude')
     .isFloat({ min: -90, max: 90 })
     .withMessage('Latitude must be between -90 and 90'),
@@ -118,13 +181,19 @@ const createRunValidation = [
  * Validation rules for updating a run
  */
 const updateRunValidation = [
-  param('id').notEmpty().withMessage('Run ID is required'),
+  param('id')
+    .notEmpty()
+    .withMessage('Run ID is required')
+    .trim()
+    .customSanitizer(value => value.replace(/[${}]/g, '')),
   body('notes')
     .optional()
+    .trim()
     .isString()
     .withMessage('Notes must be a string')
     .isLength({ max: VALIDATION.MAX_NOTES_LENGTH })
-    .withMessage(`Notes cannot exceed ${VALIDATION.MAX_NOTES_LENGTH} characters`),
+    .withMessage(`Notes cannot exceed ${VALIDATION.MAX_NOTES_LENGTH} characters`)
+    .customSanitizer(value => value ? value.replace(/[<>]/g, '') : value),
   validate,
 ];
 
@@ -181,7 +250,11 @@ const statsPeriodValidation = [
  * Validation rules for run ID parameter
  */
 const runIdValidation = [
-  param('id').notEmpty().withMessage('Run ID is required'),
+  param('id')
+    .notEmpty()
+    .withMessage('Run ID is required')
+    .trim()
+    .customSanitizer(value => value.replace(/[${}]/g, '')),
   validate,
 ];
 
@@ -191,18 +264,24 @@ const runIdValidation = [
 const updateProfileValidation = [
   body('username')
     .optional()
+    .trim()
     .isString()
     .withMessage('Username must be a string')
     .isLength({ min: VALIDATION.MIN_USERNAME_LENGTH, max: VALIDATION.MAX_USERNAME_LENGTH })
     .withMessage(
       `Username must be between ${VALIDATION.MIN_USERNAME_LENGTH} and ${VALIDATION.MAX_USERNAME_LENGTH} characters`
-    ),
+    )
+    .matches(/^[a-zA-Z0-9_]+$/)
+    .withMessage('Username can only contain letters, numbers, and underscores')
+    .customSanitizer(value => value ? value.replace(/[${}]/g, '') : value),
   body('profilePicture')
     .optional()
-    .isURL()
-    .withMessage('Profile picture must be a valid URL'),
+    .trim()
+    .isURL({ protocols: ['http', 'https'], require_protocol: true })
+    .withMessage('Profile picture must be a valid HTTP/HTTPS URL'),
   body('runColor')
     .optional()
+    .trim()
     .matches(/^#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$/)
     .withMessage('Run color must be a valid hex color code (e.g., #FF6B6B or #F00)'),
   validate,
@@ -242,6 +321,31 @@ const bulkSyncValidation = [
   body('runs.*.route.*.timestamp')
     .isISO8601()
     .withMessage('Timestamp must be a valid ISO 8601 date'),
+  body('runs.*.area')
+    .optional()
+    .trim()
+    .isString()
+    .withMessage('Area must be a string')
+    .isLength({ max: 200 })
+    .withMessage('Area name cannot exceed 200 characters')
+    .matches(/^[a-zA-Z0-9\s\-,.()&'"]+$/)
+    .withMessage('Area contains invalid characters')
+    .customSanitizer(value => {
+      if (!value) return value;
+      return value.replace(/[${}]/g, '').replace(/[<>]/g, '').trim();
+    }),
+  body('runs.*.totalArea')
+    .optional()
+    .isFloat({ min: 0 })
+    .withMessage('Total area must be a positive number (in square meters)'),
+  body('runs.*.notes')
+    .optional()
+    .trim()
+    .customSanitizer(value => value ? value.replace(/[<>]/g, '') : value),
+  body('runs.*.id')
+    .optional()
+    .trim()
+    .customSanitizer(value => value ? value.replace(/[${}]/g, '') : value),
   validate,
 ];
 

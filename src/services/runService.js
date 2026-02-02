@@ -24,6 +24,8 @@ class RunService {
         startTime: new Date(runData.startTime),
         endTime: new Date(runData.endTime),
         distance: runData.distance,
+        area: runData.area || null,
+        totalArea: runData.totalArea || null,
         duration: runData.duration,
         averageSpeed: runData.averageSpeed,
         maxSpeed: runData.maxSpeed || 0,
@@ -103,6 +105,8 @@ class RunService {
             startTime: new Date(runData.startTime),
             endTime: new Date(runData.endTime),
             distance: runData.distance,
+            area: runData.area || null,
+            totalArea: runData.totalArea || null,
             duration: runData.duration,
             averageSpeed: runData.averageSpeed,
             maxSpeed: runData.maxSpeed || 0,
@@ -234,7 +238,7 @@ class RunService {
       }
 
       const runs = await Run.find(query)
-        .select('id userId startTime endTime distance duration route createdAt')
+        .select('id userId startTime endTime distance area totalArea duration route createdAt')
         .populate('userId', 'username email runColor') // Populate username, email, and runColor from User
         .sort({ startTime: -1 })
         .limit(Math.min(parseInt(limit), PAGINATION.MAX_LIMIT))
@@ -359,6 +363,177 @@ class RunService {
 
     const points = await LocationPoint.getPointsByRunId(runId);
     return points;
+  }
+
+  /**
+   * Get leaderboard by area with pagination
+   * @param {Object} options - Query options
+   * @returns {Object} Leaderboard data with rankings
+   */
+  async getAreaLeaderboard(options = {}) {
+    const {
+      page = PAGINATION.DEFAULT_PAGE,
+      limit = PAGINATION.DEFAULT_LIMIT,
+    } = options;
+
+    try {
+      // Aggregate runs by area and count
+      const pipeline = [
+        {
+          $match: {
+            isDeleted: false,
+            area: { $ne: null, $ne: '' },
+          },
+        },
+        {
+          $group: {
+            _id: '$area',
+            totalRuns: { $sum: 1 },
+            totalDistance: { $sum: '$distance' },
+            totalDuration: { $sum: '$duration' },
+          },
+        },
+        {
+          $sort: { totalRuns: -1, totalDistance: -1 },
+        },
+        {
+          $project: {
+            _id: 0,
+            area: '$_id',
+            totalRuns: 1,
+            totalDistance: 1,
+            totalDuration: 1,
+          },
+        },
+      ];
+
+      // Get total count for pagination
+      const totalResults = await Run.aggregate([
+        ...pipeline.slice(0, 1),
+        { $count: 'total' },
+      ]);
+      const totalItems = totalResults.length > 0 ? totalResults[0].total : 0;
+
+      // Apply pagination
+      const skip = (parseInt(page) - 1) * Math.min(parseInt(limit), PAGINATION.MAX_LIMIT);
+      pipeline.push(
+        { $skip: skip },
+        { $limit: Math.min(parseInt(limit), PAGINATION.MAX_LIMIT) }
+      );
+
+      const leaderboard = await Run.aggregate(pipeline);
+
+      // Add ranking index
+      const rankedLeaderboard = leaderboard.map((item, index) => ({
+        rank: skip + index + 1,
+        ...item,
+      }));
+
+      const pagination = calculatePagination(totalItems, parseInt(page), parseInt(limit));
+
+      return {
+        leaderboard: rankedLeaderboard,
+        pagination,
+      };
+    } catch (error) {
+      throw error;
+    }
+  }
+
+  /**
+   * Get leaderboard by distance with pagination
+   * @param {Object} options - Query options
+   * @returns {Object} Leaderboard data with rankings
+   */
+  async getDistanceLeaderboard(options = {}) {
+    const {
+      page = PAGINATION.DEFAULT_PAGE,
+      limit = PAGINATION.DEFAULT_LIMIT,
+    } = options;
+
+    try {
+      // Aggregate runs by user and total distance
+      const pipeline = [
+        {
+          $match: {
+            isDeleted: false,
+          },
+        },
+        {
+          $group: {
+            _id: '$userId',
+            totalDistance: { $sum: '$distance' },
+            totalRuns: { $sum: 1 },
+            totalDuration: { $sum: '$duration' },
+          },
+        },
+        {
+          $sort: { totalDistance: -1 },
+        },
+        {
+          $lookup: {
+            from: 'users',
+            localField: '_id',
+            foreignField: '_id',
+            as: 'userInfo',
+          },
+        },
+        {
+          $unwind: {
+            path: '$userInfo',
+            preserveNullAndEmptyArrays: true,
+          },
+        },
+        {
+          $project: {
+            _id: 0,
+            userId: '$_id',
+            username: '$userInfo.username',
+            email: '$userInfo.email',
+            runColor: '$userInfo.runColor',
+            totalDistance: 1,
+            totalRuns: 1,
+            totalDuration: 1,
+          },
+        },
+      ];
+
+      // Get total count for pagination
+      const totalResults = await Run.aggregate([
+        ...pipeline.slice(0, 1),
+        {
+          $group: {
+            _id: '$userId',
+          },
+        },
+        { $count: 'total' },
+      ]);
+      const totalItems = totalResults.length > 0 ? totalResults[0].total : 0;
+
+      // Apply pagination
+      const skip = (parseInt(page) - 1) * Math.min(parseInt(limit), PAGINATION.MAX_LIMIT);
+      pipeline.push(
+        { $skip: skip },
+        { $limit: Math.min(parseInt(limit), PAGINATION.MAX_LIMIT) }
+      );
+
+      const leaderboard = await Run.aggregate(pipeline);
+
+      // Add ranking index
+      const rankedLeaderboard = leaderboard.map((item, index) => ({
+        rank: skip + index + 1,
+        ...item,
+      }));
+
+      const pagination = calculatePagination(totalItems, parseInt(page), parseInt(limit));
+
+      return {
+        leaderboard: rankedLeaderboard,
+        pagination,
+      };
+    } catch (error) {
+      throw error;
+    }
   }
 }
 
