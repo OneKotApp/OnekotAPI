@@ -206,29 +206,20 @@ Content-Type: application/json
     "leaderboard": [
       {
         "rank": 1,
-        "area": "Central Park",
-        "totalRuns": 156,
-        "totalDistance": 1248.5,
-        "uniqueUsers": 42,
-        "runs": [
-          {
-            "id": "run_1234567890",
-            "userId": "507f1f77bcf86cd799439011",
-            "username": "john_runner",
-            "distance": 5.5,
-            "duration": 1800,
-            "area": "Central Park",
-            "totalArea": 125000.50,
-            "createdAt": "2026-01-10T08:00:00.000Z"
-          }
-        ]
+        "userId": "507f1f77bcf86cd799439011",
+        "username": "john_runner",
+        "email": "john@example.com",
+        "totalAreaCovered": 2500000.75,
+        "totalRuns": 45,
+        "totalDistance": 450.5,
+        "averageArea": 55555.57
       }
     ],
     "pagination": {
       "page": 1,
       "limit": 10,
-      "totalItems": 87,
-      "totalPages": 9,
+      "totalItems": 234,
+      "totalPages": 24,
       "hasNext": true,
       "hasPrev": false
     }

@@ -366,7 +366,7 @@ class RunService {
   }
 
   /**
-   * Get leaderboard by area with pagination
+   * Get leaderboard by total area coverage with pagination
    * @param {Object} options - Query options
    * @returns {Object} Leaderboard data with rankings
    */
@@ -377,41 +377,69 @@ class RunService {
     } = options;
 
     try {
-      // Aggregate runs by area and count
+      // Aggregate runs by user and total area covered
       const pipeline = [
         {
           $match: {
             isDeleted: false,
-            area: { $ne: null, $ne: '' },
+            totalArea: { $ne: null, $gt: 0 },
           },
         },
         {
           $group: {
-            _id: '$area',
+            _id: '$userId',
+            totalAreaCovered: { $sum: '$totalArea' },
             totalRuns: { $sum: 1 },
             totalDistance: { $sum: '$distance' },
-            totalDuration: { $sum: '$duration' },
           },
         },
         {
-          $sort: { totalRuns: -1, totalDistance: -1 },
+          $sort: { totalAreaCovered: -1 },
+        },
+        {
+          $lookup: {
+            from: 'users',
+            localField: '_id',
+            foreignField: '_id',
+            as: 'user',
+          },
+        },
+        {
+          $unwind: '$user',
         },
         {
           $project: {
             _id: 0,
-            area: '$_id',
+            userId: '$_id',
+            username: '$user.username',
+            email: '$user.email',
+            totalAreaCovered: 1,
             totalRuns: 1,
             totalDistance: 1,
-            totalDuration: 1,
+            averageArea: { $divide: ['$totalAreaCovered', '$totalRuns'] },
           },
         },
       ];
 
       // Get total count for pagination
-      const totalResults = await Run.aggregate([
-        ...pipeline.slice(0, 1),
-        { $count: 'total' },
-      ]);
+      const countPipeline = [
+        {
+          $match: {
+            isDeleted: false,
+            totalArea: { $ne: null, $gt: 0 },
+          },
+        },
+        {
+          $group: {
+            _id: '$userId',
+          },
+        },
+        {
+          $count: 'total',
+        },
+      ];
+
+      const totalResults = await Run.aggregate(countPipeline);
       const totalItems = totalResults.length > 0 ? totalResults[0].total : 0;
 
       // Apply pagination
