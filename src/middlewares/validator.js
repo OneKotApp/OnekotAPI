@@ -8,14 +8,7 @@ const { MESSAGES, VALIDATION } = require('../utils/constants');
 const validate = (req, res, next) => {
   const errors = validationResult(req);
 
-  // Debug logging
-  if (req.body && req.body.email) {
-    console.log('🎯 In validator - email:', req.body.email);
-    console.log('🎯 Email type:', typeof req.body.email);
-  }
-
   if (!errors.isEmpty()) {
-    console.log('❌ Validation errors:', errors.array());
     const errorMessages = errors
       .array()
       .map((err) => `${err.path}: ${err.msg}`)
@@ -43,15 +36,18 @@ const loginValidation = [
     .isLength({ min: 2, max: 50 })
     .withMessage('Username must be between 2 and 50 characters')
     .matches(/^[a-zA-Z0-9_]+$/)
-    .withMessage('Username can only contain letters, numbers, and underscores')
-    .customSanitizer(value => value ? value.replace(/[${}]/g, '') : value),
+    .withMessage('Username can only contain letters, numbers, and underscores'),
   body('deviceInfo')
     .optional()
     .isObject()
     .withMessage('Device info must be an object')
     .custom((value) => {
-      // Prevent prototype pollution
-      if (value && (value.__proto__ || value.constructor || value.prototype)) {
+      // Prevent prototype pollution - check if these properties are explicitly set
+      if (value && (
+        Object.prototype.hasOwnProperty.call(value, '__proto__') ||
+        Object.prototype.hasOwnProperty.call(value, 'constructor') ||
+        Object.prototype.hasOwnProperty.call(value, 'prototype')
+      )) {
         throw new Error('Invalid device info structure');
       }
       return true;
@@ -61,8 +57,12 @@ const loginValidation = [
     .isObject()
     .withMessage('Location must be an object')
     .custom((value) => {
-      // Prevent prototype pollution
-      if (value && (value.__proto__ || value.constructor || value.prototype)) {
+      // Prevent prototype pollution - check if these properties are explicitly set
+      if (value && (
+        Object.prototype.hasOwnProperty.call(value, '__proto__') ||
+        Object.prototype.hasOwnProperty.call(value, 'constructor') ||
+        Object.prototype.hasOwnProperty.call(value, 'prototype')
+      )) {
         throw new Error('Invalid location structure');
       }
       return true;

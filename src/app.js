@@ -6,7 +6,7 @@ const morgan = require('morgan');
 const compression = require('compression');
 const { errorHandler, notFound } = require('./middlewares/errorHandler');
 const { apiLimiter } = require('./middlewares/rateLimiter');
-const { sanitizeInput, blockNoSQLInjection } = require('./middlewares/sanitizeInput');
+const { noSQLProtection } = require('./middlewares/sanitizeInput');
 const { NODE_ENV } = require('./utils/constants');
 
 // Import routes
@@ -49,10 +49,8 @@ app.use(cors(corsOptions));
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
-// Security: Input sanitization and NoSQL injection prevention
-// Applied globally to all routes with minimal overhead
-app.use(sanitizeInput);
-app.use(blockNoSQLInjection);
+// NoSQL injection protection (lightweight, email-safe)
+app.use(noSQLProtection);
 
 // Compression middleware
 app.use(compression());
