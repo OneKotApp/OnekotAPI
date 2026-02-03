@@ -1,11 +1,33 @@
 const Run = require('../models/Run');
-const LocationPoint = require('../models/LocationPoint');
 const User = require('../models/User');
 const ApiError = require('../utils/ApiError');
 const { generateRunId, calculatePagination } = require('../utils/helpers');
 const { MESSAGES, PAGINATION } = require('../utils/constants');
 
 class RunService {
+  /**
+   * Calculate geographic center point of a route
+   * Used for geospatial indexing and efficient location queries
+   * @param {Array} route - Array of lat/lng points
+   * @returns {Object} GeoJSON Point { type: 'Point', coordinates: [lng, lat] }
+   */
+  calculateRouteCenter(route) {
+    if (!route || route.length === 0) return null;
+
+    // Calculate centroid (geographic center)
+    const sumLat = route.reduce((sum, point) => sum + point.latitude, 0);
+    const sumLng = route.reduce((sum, point) => sum + point.longitude, 0);
+    
+    const centerLat = sumLat / route.length;
+    const centerLng = sumLng / route.length;
+
+    // GeoJSON format: [longitude, latitude] (note: lng comes first!)
+    return {
+      type: 'Point',
+      coordinates: [centerLng, centerLat],
+    };
+  }
+
   /**
    * Create a new run session
    * @param {string} userId - User ID
@@ -16,6 +38,9 @@ class RunService {
     try {
       // Generate unique ID if not provided
       const runId = runData.id || generateRunId();
+
+      // Calculate geographic center for geospatial queries
+      const location = this.calculateRouteCenter(runData.route);
 
       // Prepare run document
       const run = await Run.create({
@@ -30,6 +55,7 @@ class RunService {
         averageSpeed: runData.averageSpeed,
         maxSpeed: runData.maxSpeed || 0,
         notes: runData.notes || null,
+        location, // GeoJSON Point for geospatial indexing
         route: runData.route.map((point) => ({
           latitude: point.latitude,
           longitude: point.longitude,
@@ -38,11 +64,6 @@ class RunService {
           accuracy: point.accuracy || null,
         })),
       });
-
-      // Also store location points in separate collection for advanced queries
-      if (runData.route && runData.route.length > 0) {
-        await LocationPoint.bulkInsertPoints(runId, userId, runData.route);
-      }
 
       // Update user metadata
       const user = await User.findById(userId);
@@ -98,6 +119,9 @@ class RunService {
             continue;
           }
 
+          // Calculate geographic center for geospatial queries
+          const location = this.calculateRouteCenter(runData.route);
+
           // Prepare run document
           const run = await Run.create({
             id: runId,
@@ -111,6 +135,7 @@ class RunService {
             averageSpeed: runData.averageSpeed,
             maxSpeed: runData.maxSpeed || 0,
             notes: runData.notes || null,
+            location, // GeoJSON Point for geospatial indexing
             route: runData.route.map((point) => ({
               latitude: point.latitude,
               longitude: point.longitude,
@@ -119,11 +144,6 @@ class RunService {
               accuracy: point.accuracy || null,
             })),
           });
-
-          // Store location points in separate collection
-          if (runData.route && runData.route.length > 0) {
-            await LocationPoint.bulkInsertPoints(runId, userId, runData.route);
-          }
 
           results.successful.push(run);
           results.summary.created++;
@@ -207,6 +227,8 @@ class RunService {
 
   /**
    * Get all community runs for map plotting (all users)
+   * OPTIMIZED with MongoDB 2dsphere geospatial indexing
+   * Performance: O(log n) instead of O(n) for location queries
    * @param {Object} options - Query options
    * @returns {Object} Runs and pagination data
    */
@@ -218,28 +240,30 @@ class RunService {
     } = options;
 
     try {
-      // Build query
+      // Build base query
       const query = {
         isDeleted: false,
-        'route.0': { $exists: true }, // Ensure route has at least one point
       };
 
-      // Apply bounding box filter if provided
+      // Apply geospatial filter using 2dsphere index (FAST!)
       if (boundingBox) {
         const { minLat, maxLat, minLng, maxLng } = boundingBox;
-        query['route.latitude'] = {
-          $gte: minLat,
-          $lte: maxLat,
-        };
-        query['route.longitude'] = {
-          $gte: minLng,
-          $lte: maxLng,
+        
+        // MongoDB $geoWithin query - leverages 2dsphere index
+        // This is O(log n) vs O(n) for array scanning
+        query.location = {
+          $geoWithin: {
+            $box: [
+              [minLng, minLat], // Southwest corner [longitude, latitude]
+              [maxLng, maxLat]  // Northeast corner
+            ]
+          }
         };
       }
 
       const runs = await Run.find(query)
-        .select('id userId startTime endTime distance area totalArea duration route createdAt')
-        .populate('userId', 'username email runColor') // Populate username, email, and runColor from User
+        .select('id userId startTime endTime distance area totalArea duration route location createdAt')
+        .populate('userId', 'username email runColor')
         .sort({ startTime: -1 })
         .limit(Math.min(parseInt(limit), PAGINATION.MAX_LIMIT))
         .skip((parseInt(page) - 1) * Math.min(parseInt(limit), PAGINATION.MAX_LIMIT))
@@ -355,14 +379,13 @@ class RunService {
    */
   async getRunLocationPoints(runId, userId) {
     // Verify run exists and belongs to user
-    const run = await Run.findOne({ id: runId, userId });
+    const run = await Run.findOne({ id: runId, userId }).select('route');
 
     if (!run) {
       throw ApiError.notFound(MESSAGES.RUN_NOT_FOUND);
     }
 
-    const points = await LocationPoint.getPointsByRunId(runId);
-    return points;
+    return run.route || [];
   }
 
   /**

@@ -58,6 +58,17 @@ const runSchema = new mongoose.Schema(
       maxlength: [500, 'Notes cannot exceed 500 characters'],
       default: null,
     },
+    location: {
+      type: {
+        type: String,
+        enum: ['Point'],
+        default: 'Point',
+      },
+      coordinates: {
+        type: [Number], // [longitude, latitude]
+        index: '2dsphere', // Geospatial index for efficient location queries
+      },
+    },
     route: {
       type: [
         {
@@ -111,6 +122,10 @@ runSchema.index({ userId: 1, startTime: -1 });
 runSchema.index({ userId: 1, isDeleted: 1, startTime: -1 });
 runSchema.index({ startTime: -1 });
 runSchema.index({ isDeleted: 1 });
+
+// Geospatial index for location-based queries (like Strava, Uber)
+runSchema.index({ location: '2dsphere' });
+runSchema.index({ isDeleted: 1, location: '2dsphere' }); // Compound for filtered geo queries
 
 // Virtual for calculating duration in hours
 runSchema.virtual('durationHours').get(function () {

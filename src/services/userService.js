@@ -1,7 +1,6 @@
 const User = require('../models/User');
 const Run = require('../models/Run');
 const Stats = require('../models/Stats');
-const LocationPoint = require('../models/LocationPoint');
 const LoginActivity = require('../models/LoginActivity');
 const ApiError = require('../utils/ApiError');
 const { sanitizeUser } = require('../utils/helpers');
@@ -91,7 +90,6 @@ class UserService {
     await Promise.all([
       Run.deleteMany({ userId }),
       Stats.deleteMany({ userId }),
-      LocationPoint.deleteMany({ userId }),
       LoginActivity.deleteMany({ userId }),
       User.findByIdAndDelete(userId),
     ]);
