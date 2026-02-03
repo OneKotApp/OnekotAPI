@@ -262,7 +262,7 @@ class RunService {
       }
 
       const runs = await Run.find(query)
-        .select('id userId startTime endTime distance area totalArea duration route location createdAt')
+        .select('id userId startTime endTime distance area totalArea duration route createdAt')
         .populate('userId', 'username email runColor')
         .sort({ startTime: -1 })
         .limit(Math.min(parseInt(limit), PAGINATION.MAX_LIMIT))
