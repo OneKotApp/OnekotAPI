@@ -354,8 +354,15 @@ const bulkSyncValidation = [
   validate,
 ];
 
+/**
+ * Middleware to handle validation errors (alias for validate)
+ * Used for express-validator error handling
+ */
+const handleValidationErrors = validate;
+
 module.exports = {
   validate,
+  handleValidationErrors,
   loginValidation,
   createRunValidation,
   updateRunValidation,

@@ -14,6 +14,7 @@ const authRoutes = require('./routes/auth.routes');
 const runRoutes = require('./routes/run.routes');
 const statsRoutes = require('./routes/stats.routes');
 const userRoutes = require('./routes/user.routes');
+const aiRoutes = require('./routes/ai.routes');
 
 const app = express();
 
@@ -80,6 +81,7 @@ app.use('/api/v1/auth', authRoutes);
 app.use('/api/v1/runs', runRoutes);
 app.use('/api/v1/stats', statsRoutes);
 app.use('/api/v1/users', userRoutes);
+app.use('/api/v1/ai', aiRoutes);
 
 // API documentation route
 app.get('/api/v1', (req, res) => {
@@ -118,6 +120,19 @@ app.get('/api/v1', (req, res) => {
         activity: 'GET /api/v1/users/activity',
         clearData: 'DELETE /api/v1/users/data',
         deleteAccount: 'DELETE /api/v1/users/account',
+      },
+      ai: {
+        analyzeRun: 'POST /api/v1/ai/analyze-run/:runId',
+        analyzeRunData: 'POST /api/v1/ai/analyze-run',
+        weeklyReport: 'GET /api/v1/ai/weekly-report',
+        healthTips: 'GET /api/v1/ai/health-tips',
+        voiceQuery: 'POST /api/v1/ai/voice/query',
+        voiceInteract: 'POST /api/v1/ai/voice/interact',
+        textToSpeech: 'POST /api/v1/ai/voice/tts',
+        speechToText: 'POST /api/v1/ai/voice/stt',
+        getVoices: 'GET /api/v1/ai/voice/voices',
+        feedback: 'POST /api/v1/ai/feedback',
+        status: 'GET /api/v1/ai/status',
       },
     },
     documentation: 'https://github.com/your-repo/onekotAPI',
